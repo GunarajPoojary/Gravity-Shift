@@ -1,67 +1,58 @@
 ﻿using System.Collections;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 namespace GravityManipulationPuzzle
 {
-    /// <summary>
-    /// Manages game states such as game over conditions and displays related UI elements.
-    /// </summary>
     [DefaultExecutionOrder(-2)]
     public class GameManager : MonoBehaviour
     {
+        // Singleton instance for easy access
         public static GameManager Instance { get; private set; }
 
-        [SerializeField] private Text _gameOverText;
+        [SerializeField] private Text _gameStateText;
 
-        [SerializeField] private CountdownTimer _timer;
-        [SerializeField] private float _waitTimeAfterGameOver = 5f;
+        [SerializeField] private float _waitTimeAfterGameOver = 3f;
 
         private void Awake()
         {
             Instance = this;
 
-            if (_gameOverText == null)
+            _gameStateText.gameObject.SetActive(false);
+
+            Time.timeScale = 1;
+
+            if (_gameStateText == null)
             {
                 Debug.LogWarning("GameOverText is not assigned in the inspector.", this);
                 return;
             }
 
-            _gameOverText.gameObject.SetActive(false);
+            // Ensure the game state text is hidden
+            _gameStateText.gameObject.SetActive(false);
         }
 
-        private void Update()
+        public void RestartGame()
         {
-            if (Input.GetKeyDown(KeyCode.Escape))
-            {
-                Application.Quit();
-            }
+            SceneManager.LoadScene(0);
         }
 
-        public void GameOver(string message)
+        public void GameWon()
         {
-            _gameOverText.gameObject.SetActive(true);
-            _gameOverText.text = message;
+            _gameStateText.gameObject.SetActive(true);
+            _gameStateText.text = "You won!";
 
-            StartCoroutine(QuitGame());
+            // Pause the game
+            Time.timeScale = 0;
         }
 
-#if UNITY_EDITOR
-        private IEnumerator QuitGame()
+        public void GameOver(string text)
         {
-            yield return new WaitForSeconds(_waitTimeAfterGameOver);
+            _gameStateText.gameObject.SetActive(true);
+            _gameStateText.text = text;
 
-            Application.Quit();
+            Time.timeScale = 0;
         }
-#else
-        private IEnumerator QuitGame()
-        {
-            yield return new WaitForSeconds(_waitTimeAfterGameOver);
-
-            Application.Quit();
-        }
-#endif
-
-        public void StopTimer() => _timer.StopTimer();
     }
 }

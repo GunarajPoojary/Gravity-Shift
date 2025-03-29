@@ -3,6 +3,9 @@ using UnityEngine.InputSystem;
 
 namespace GravityManipulationPuzzle
 {
+    /// <summary>
+    /// Provides the gravity direction for the gravity shift system.
+    /// </summary>
     public interface IGravityDirectionProvider
     {
         Vector3 GravityDirection { get; }
@@ -14,31 +17,27 @@ namespace GravityManipulationPuzzle
     public class GravityShift : MonoBehaviour, IGravityDirectionProvider
     {
         [SerializeField] private GameObject _hologramPlayer;
-        [SerializeField][Range(1f, 3f)] private float _gravityMultiplier = 1f;
 
         private IPlayerInputHandler _playerInput;
         private Rigidbody _rb;
         private Transform _cam;
 
-        private static readonly Vector3[] _worldAxes = new Vector3[]
+        // Predefined world axes for aligning gravity.
+        private static readonly Vector3[] _worldAxes =
         {
-            Vector3.right,
-            Vector3.left,
-            Vector3.up,
-            Vector3.down,
-            Vector3.forward,
-            Vector3.back
+            Vector3.right, Vector3.left, Vector3.up,
+            Vector3.down, Vector3.forward, Vector3.back
         };
 
-        private Vector3 _gravityVector; // Vector representing the direction of the desired gravity shift
-        private Vector3 _previousPosition; // Stores the previous position of the player
-        private Quaternion _previousRotation; // Stores the previous position of the player
+        private Vector3 _gravityVector; // Stores the desired gravity shift direction.
+        private Vector3 _previousPosition;
+        private Quaternion _previousRotation;
         private Vector3 _hologramGravityDirection;
 
-        private const float GRAVITY = -9.81f;
-        private Vector3 _gravityDirection;
+        private const float GRAVITY = -9.81f; // Default gravity constant.
+        private Vector3 _gravityDirection; // Current applied gravity direction.
 
-        public Vector3 GravityDirection => _gravityDirection;
+        public Vector3 GravityDirection => _gravityDirection; // Property to access gravity direction.
 
         private void Awake()
         {
@@ -64,6 +63,9 @@ namespace GravityManipulationPuzzle
             UpdateHologramPosition();
         }
 
+        /// <summary>
+        /// Initializes required components.
+        /// </summary>
         private void InitializeComponents()
         {
             _playerInput = GetComponent<IPlayerInputHandler>();
@@ -73,7 +75,9 @@ namespace GravityManipulationPuzzle
             _previousRotation = transform.rotation;
         }
 
-        // Update the position of the hologram to match the player's position
+        /// <summary>
+        /// Updates the hologram's position to match the player's.
+        /// </summary>
         private void UpdateHologramPosition()
         {
             if (transform.position != _previousPosition)
@@ -91,18 +95,22 @@ namespace GravityManipulationPuzzle
             }
         }
 
-        // Activate and position the hologram at the player's current location
+        /// <summary>
+        /// Activates and positions the hologram at the player's current location.
+        /// </summary>
         private void SetHologram()
         {
             _hologramPlayer.SetActive(true);
             _hologramPlayer.transform.SetPositionAndRotation(transform.position, transform.rotation);
         }
 
-        // Align the hologram based on the player's input direction and camera orientation
+        /// <summary>
+        /// Aligns the hologram based on the player's input direction and camera orientation.
+        /// </summary>
         private void AlignHologram()
         {
             Vector3 gravityUp = -Physics.gravity.normalized;
-            Vector3 projectedForward = Vector3.ProjectOnPlane(_cam.forward, gravityUp).normalized; // Project camera's forward direction onto the plane perpendicular to gravity
+            Vector3 projectedForward = Vector3.ProjectOnPlane(_cam.forward, gravityUp).normalized;
 
             if (_gravityVector == Vector3.right)
             {
@@ -122,7 +130,10 @@ namespace GravityManipulationPuzzle
             }
         }
 
-        // Aligns the hologram's Y-axis to the closest world axis based on the input direction
+        /// <summary>
+        /// Aligns the hologram's Y-axis to the closest world axis.
+        /// </summary>
+        /// <param name="alignAxis">The axis to align towards.</param>
         private void AlignYAxisToClosestWorldAxis(Vector3 alignAxis)
         {
             float smallestAngle = float.MaxValue;
@@ -142,35 +153,45 @@ namespace GravityManipulationPuzzle
 
             if (_hologramGravityDirection == -transform.up) return;
 
-            _hologramPlayer.transform.rotation = Quaternion.FromToRotation(_hologramPlayer.transform.up, -closestWorldAxis) * _hologramPlayer.transform.rotation;
+            _hologramPlayer.transform.rotation = Quaternion.FromToRotation(
+                _hologramPlayer.transform.up, -closestWorldAxis
+            ) * _hologramPlayer.transform.rotation;
         }
 
         #region Input Methods
+
+        /// <summary>
+        /// Handles gravity shift preview input.
+        /// </summary>
+        /// <param name="ctx">Input action callback context.</param>
         private void OnGravityShiftPerformed(InputAction.CallbackContext ctx)
         {
             Vector2 input = ctx.ReadValue<Vector2>();
-            _gravityVector = new Vector3(input.x, 0, input.y); // Convert the input to a vector representing the gravity shift direction
+            _gravityVector = new Vector3(input.x, 0, input.y);
 
-            SetHologram(); // Activate the hologram and position it correctly
-            AlignHologram(); // Align the hologram based on the camera direction and gravity vector
+            SetHologram();
+            AlignHologram();
         }
 
+        /// <summary>
+        /// Applies the gravity shift when the input is performed.
+        /// </summary>
+        /// <param name="ctx">Input action callback context.</param>
         private void OnApplyGravityShiftPerformed(InputAction.CallbackContext ctx)
         {
-            _gravityDirection = _hologramGravityDirection; // Set the new gravity direction based on the hologram's alignment
+            _gravityDirection = _hologramGravityDirection;
 
             transform.up = _hologramPlayer.transform.up;
-
             _hologramPlayer.SetActive(false);
 
-            // Project the player's current velocity onto the new gravity direction
+            // Preserve motion in the new gravity direction.
             Vector3 projectedVelocity = Vector3.Project(_rb.velocity, _gravityDirection);
-
-            // Apply the projected velocity to maintain consistent motion with the new gravity direction
             _rb.velocity = projectedVelocity;
 
-            Physics.gravity = _gravityMultiplier * GRAVITY * -_gravityDirection;
+            // Apply new gravity.
+            Physics.gravity = GRAVITY * -_gravityDirection;
         }
+
         #endregion
     }
 }

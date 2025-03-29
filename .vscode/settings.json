@@ -51,5 +51,5 @@
         "temp/": true,
         "Temp/": true
     },
-    "dotnet.defaultSolution": "Gravity-Manipulation-Puzzle - Copy.sln"
+    "dotnet.defaultSolution": "Gravity-Shift.sln"
 }

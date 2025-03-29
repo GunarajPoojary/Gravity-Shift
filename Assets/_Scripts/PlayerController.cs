@@ -16,8 +16,7 @@ namespace GravityManipulationPuzzle
 
         [SerializeField] private Transform _groundCheck;
         [SerializeField] private float _groundCheckRadius = 0.1f;
-        [SerializeField] private float _fallDistanceThreshold = 1f; // Threshold distance for detecting fall
-        [SerializeField] private float _roomLength = 1000f; // Length of the room for free fall purposes
+        [SerializeField] private float _fallDistanceThreshold = 1f;
 
         private Rigidbody _rb;
         private Transform _cam;
@@ -26,11 +25,10 @@ namespace GravityManipulationPuzzle
 
         private Vector3 _movementInput;
 
-        private static readonly int IsRunningHash = Animator.StringToHash("IsRunning");
-        private static readonly int IsFallingHash = Animator.StringToHash("IsFalling");
+        private static readonly int IsRunningHash = Animator.StringToHash("IsRunning"); // Hash for the running animation state
+        private static readonly int IsFallingHash = Animator.StringToHash("IsFalling"); // Hash for the falling animation state
 
         private bool _isGrounded;
-
         private bool _isFalling;
 
         private void Awake() => InitializeComponents();
@@ -53,7 +51,6 @@ namespace GravityManipulationPuzzle
         {
             CheckGrounded();
             CheckFalling();
-            IsFreeFalling();
             UpdateAnimations();
         }
 
@@ -79,9 +76,8 @@ namespace GravityManipulationPuzzle
         #region Input Methods
         private void OnMovementPerformed(InputAction.CallbackContext ctx)
         {
-            Vector2 inputVector = ctx.ReadValue<Vector2>();
-
-            _movementInput = new Vector3(inputVector.x, 0, inputVector.y);
+            Vector2 inputVector = ctx.ReadValue<Vector2>(); // Read input values from Input System
+            _movementInput = new Vector3(inputVector.x, 0, inputVector.y); // Convert to a 3D movement vector
         }
 
         private void OnMovementCanceled(InputAction.CallbackContext ctx) => _movementInput = Vector3.zero;
@@ -97,18 +93,20 @@ namespace GravityManipulationPuzzle
 
         private void Move()
         {
-            Vector3 gravityUp = -_gravityShift.GravityDirection.normalized;
+            Vector3 gravityUp = -_gravityShift.GravityDirection.normalized; // Get the upward direction relative to gravity
+
+            // Calculate movement direction based on camera orientation and gravity alignment
             Vector3 moveDir = Vector3.ProjectOnPlane(_cam.forward * _movementInput.z + _cam.right * _movementInput.x, gravityUp).normalized;
 
             if (moveDir.sqrMagnitude >= 0.01f)
             {
-                Quaternion targetRotation = Quaternion.LookRotation(moveDir, gravityUp);
+                Quaternion targetRotation = Quaternion.LookRotation(moveDir, gravityUp); // Calculate target rotation
                 _rb.rotation = Quaternion.Slerp(_rb.rotation, targetRotation, _turnSmoothTime);
                 _rb.MovePosition(_rb.position + _moveSpeed * Time.deltaTime * moveDir);
             }
         }
 
-        private void Jump() => _rb.AddForce(-_gravityShift.GravityDirection * _jumpForce, ForceMode.Impulse);
+        private void Jump() => _rb.AddForce(-_gravityShift.GravityDirection * _jumpForce, ForceMode.Impulse); // Apply jump force in opposite gravity direction
 
         private void CheckGrounded()
         {
@@ -117,31 +115,10 @@ namespace GravityManipulationPuzzle
 
         private void CheckFalling()
         {
+            // Cast a ray downward to check if the ground is within the fall threshold
             bool isGroundBelow = Physics.Raycast(_groundCheck.position, -_groundCheck.up, out RaycastHit hit, _fallDistanceThreshold, _groundLayer);
 
             _isFalling = !isGroundBelow && !_isGrounded;
-        }
-
-        // Method to check if the character is freely falling without any ground in any direction, since character can shift the gravity
-        private void IsFreeFalling()
-        {
-            float rayDistance = _roomLength;
-            Vector3 origin = transform.position;
-
-            // Check below for ground
-            if (!Physics.Raycast(origin, -transform.up, out RaycastHit hitDown, rayDistance, _groundLayer))
-            {
-                // If no ground below, check in cardinal directions
-                bool isGroundAround = Physics.Raycast(origin, transform.right, rayDistance, _groundLayer) ||
-                                      Physics.Raycast(origin, -transform.right, rayDistance, _groundLayer) ||
-                                      Physics.Raycast(origin, transform.forward, rayDistance, _groundLayer) ||
-                                      Physics.Raycast(origin, -transform.forward, rayDistance, _groundLayer);
-
-                if (!isGroundAround)
-                {
-                    GameManager.Instance.GameOver("Game Over: Freely Falling!");
-                }
-            }
         }
 
         private void UpdateAnimations()

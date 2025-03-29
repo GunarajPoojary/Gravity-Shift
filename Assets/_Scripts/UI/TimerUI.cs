@@ -11,6 +11,4 @@ public class TimerUI : MonoBehaviour
         int seconds = remainingTime % 60;
         _timerText.text = $"{minutes:00}:{seconds:00}";
     }
-
-    public void TimerFinished() => _timerText.text = "Time's up!";
 }

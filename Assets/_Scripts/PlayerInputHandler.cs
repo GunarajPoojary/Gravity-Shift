@@ -1,4 +1,3 @@
-using System.Collections;
 using GravityManipulationPuzzle.InputActions;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -35,10 +34,11 @@ namespace GravityManipulationPuzzle
 
         private void Awake()
         {
-            _inputActions = new PlayerInputActions();
+            _inputActions = new PlayerInputActions(); // Instantiates the input actions class.
 
-            PlayerInputActions.PlayerActions PlayerActions = _inputActions.Player;
+            PlayerInputActions.PlayerActions PlayerActions = _inputActions.Player; // Stores the player input actions.
 
+            // Assigning specific input actions to their corresponding variables.
             _moveAction = PlayerActions.Movement;
             _jumpAction = PlayerActions.Jump;
             _lookAction = PlayerActions.Look;
@@ -49,16 +49,5 @@ namespace GravityManipulationPuzzle
         private void OnEnable() => _inputActions.Enable();
 
         private void OnDisable() => _inputActions.Disable();
-
-        public void DisableActionFor(InputAction action, float seconds) => StartCoroutine(DisableAction(action, seconds));
-
-        private IEnumerator DisableAction(InputAction action, float seconds)
-        {
-            action.Disable();
-
-            yield return new WaitForSeconds(seconds);
-
-            action.Enable();
-        }
     }
 }
